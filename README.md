@@ -1,6 +1,6 @@
-### wxml2canvas
-
-> this repo isn't under maintaining now, fork and do whatever you want
+### wxml2canvas 
+由于这个项目作者不再维护，所以从gy134340/wxml2canvas[https://github.com/gy134340/wxml2canvas] fork过来的,
+修复缺陷，逐步完善功能
 
 #### Why
 

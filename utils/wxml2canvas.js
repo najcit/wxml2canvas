@@ -8,21 +8,30 @@ const COMPUTED_STYLE = [
   'backgroundColor',
   'border',
   'border-radius',
+  'border-top',
+  'border-left',
+  'border-right',
+  'border-bottom',
   'box-sizing',
   'line-height',
+  'z-index'
 ]
 const DEFAULT_BORDER = '0px none rgb(0, 0, 0)'
 const DEFAULT_BORDER_RADIUS = '0px'
 
 // default z-index??
 const DEFAULT_RANK = {
-  view: 0,
-  image: 1,
+  image: 0,
+  view: 1,
   text: 2,
 }
 
 const drawWrapper = (context, data) => {
-  const { backgroundColor, width, height } = data
+  const {
+    backgroundColor,
+    width,
+    height
+  } = data
   context.setFillStyle(backgroundColor)
   context.fillRect(0, 0, width, height)
 }
@@ -37,7 +46,10 @@ const strLen = str => {
 }
 
 const isMuitlpleLine = (data, text) => {
-  const { 'font-size': letterWidth, width } = data
+  const {
+    'font-size': letterWidth,
+    width
+  } = data
   const length = strLen(text)
   const rowlineLength = length * parseInt(letterWidth, 10)
   return rowlineLength > width
@@ -47,6 +59,7 @@ const drawMutipleLine = (context, data, text) => {
   const {
     'font-size': letterWidth,
     width,
+    height,
     left,
     top,
     'line-height': lineHeightAttr,
@@ -65,13 +78,18 @@ const drawMutipleLine = (context, data, text) => {
 // enable color, font, for now only support chinese
 const drawText = (context, data) => {
   const {
-    dataset: { text },
+    dataset: {
+      text
+    },
     left,
     top,
     color,
     'font-weight': fontWeight,
     'font-size': fontSize,
     'font-family': fontFamily,
+    backgroundColor,
+    width,
+    height
   } = data
   const canvasText = Array.isArray(text) ? text[0] : text
   context.font = `${fontWeight} ${Math.round(
@@ -81,7 +99,7 @@ const drawText = (context, data) => {
   if (isMuitlpleLine(data, canvasText)) {
     drawMutipleLine(context, data, canvasText)
   } else {
-    context.fillText(canvasText, left, top)
+    context.fillText(canvasText, left, top + (height - parseInt(fontSize) * 0.9) / 2)
   }
   context.restore()
 }
@@ -96,14 +114,15 @@ const getImgInfo = src =>
     })
   })
 
-const hasBorder = border => border !== DEFAULT_BORDER
+const hasBorder = border => (border !== DEFAULT_BORDER) && (border !== "")
 const hasBorderRadius = borderRadius => borderRadius !== DEFAULT_BORDER_RADIUS
 
 const getBorderAttributes = border => {
   let borderColor, borderStyle
   let borderWidth = 0
-
-  if (hasBorder) {
+  console.log('border', border, hasBorder(border))
+  if (hasBorder(border)) {
+    console.log(border.split(/\s/))
     borderWidth = parseInt(border.split(/\s/)[0], 10)
     borderStyle = border.split(/\s/)[1]
     borderColor = border.match(/(rgb).*/gi)[0]
@@ -116,7 +135,12 @@ const getBorderAttributes = border => {
 }
 
 const getImgRect = (imgData, borderWidth) => {
-  const { width, height, left, top } = imgData
+  const {
+    width,
+    height,
+    left,
+    top
+  } = imgData
   const imgWidth = width - 2 * borderWidth
   const imgHeight = height - 2 * borderWidth
   const imgLeft = left + borderWidth
@@ -130,7 +154,12 @@ const getImgRect = (imgData, borderWidth) => {
 }
 
 const getArcCenterPosition = imgData => {
-  const { width, height, left, top } = imgData
+  const {
+    width,
+    height,
+    left,
+    top
+  } = imgData
   const coordX = width / 2 + left
   const coordY = height / 2 + top
   return {
@@ -140,14 +169,25 @@ const getArcCenterPosition = imgData => {
 }
 
 const getArcRadius = (imgData, borderWidth = 0) => {
-  const { width } = imgData
+  const {
+    width
+  } = imgData
   return width / 2 - borderWidth / 2
 }
 
 const getCalculatedImagePosition = (imgData, naturalWidth, naturalHeight) => {
-  const { border } = imgData
-  const { borderWidth } = getBorderAttributes(border)
-  const { imgWidth, imgHeight, imgLeft, imgTop } = getImgRect(
+  const {
+    border
+  } = imgData
+  const {
+    borderWidth
+  } = getBorderAttributes(border)
+  const {
+    imgWidth,
+    imgHeight,
+    imgLeft,
+    imgTop
+  } = getImgRect(
     imgData,
     borderWidth,
   )
@@ -166,17 +206,30 @@ const getCalculatedImagePosition = (imgData, naturalWidth, naturalHeight) => {
 }
 
 const drawArcImage = (context, imgData) => {
-  const { src } = imgData
-  const { coordX, coordY } = getArcCenterPosition(imgData)
+  const {
+    src
+  } = imgData
+  const {
+    coordX,
+    coordY
+  } = getArcCenterPosition(imgData)
   return getImgInfo(src).then(res => {
-    const { width: naturalWidth, height: naturalHeight } = res
+    const {
+      width: naturalWidth,
+      height: naturalHeight
+    } = res
     const arcRadius = getArcRadius(imgData)
     context.save()
     context.beginPath()
     context.arc(coordX, coordY, arcRadius, 0, 2 * Math.PI)
     context.closePath()
     context.clip()
-    const { left, top, realWidth, realHeight } = getCalculatedImagePosition(
+    const {
+      left,
+      top,
+      realWidth,
+      realHeight
+    } = getCalculatedImagePosition(
       imgData,
       naturalWidth,
       naturalHeight,
@@ -197,10 +250,19 @@ const drawArcImage = (context, imgData) => {
 }
 
 const drawRectImage = (context, imgData) => {
-  const { src, width, height, left, top } = imgData
+  const {
+    src,
+    width,
+    height,
+    left,
+    top
+  } = imgData
 
   return getImgInfo(src).then(res => {
-    const { width: naturalWidth, height: naturalHeight } = res
+    const {
+      width: naturalWidth,
+      height: naturalHeight
+    } = res
     context.save()
     context.beginPath()
     context.rect(left, top, width, height)
@@ -229,9 +291,17 @@ const drawRectImage = (context, imgData) => {
 }
 
 const drawArcBorder = (context, imgData) => {
-  const { border } = imgData
-  const { coordX, coordY } = getArcCenterPosition(imgData)
-  const { borderWidth, borderColor } = getBorderAttributes(border)
+  const {
+    border,
+  } = imgData
+  const {
+    coordX,
+    coordY
+  } = getArcCenterPosition(imgData)
+  const {
+    borderWidth,
+    borderColor
+  } = getBorderAttributes(border)
   const arcRadius = getArcRadius(imgData, borderWidth)
   context.save()
   context.beginPath()
@@ -243,9 +313,19 @@ const drawArcBorder = (context, imgData) => {
 }
 
 const drawRectBorder = (context, imgData) => {
-  const { border } = imgData
-  const { left, top, width, height } = imgData
-  const { borderWidth, borderColor } = getBorderAttributes(border)
+  const {
+    border
+  } = imgData
+  const {
+    left,
+    top,
+    width,
+    height
+  } = imgData
+  const {
+    borderWidth,
+    borderColor
+  } = getBorderAttributes(border)
 
   const correctedBorderWidth = borderWidth + 1 // draw may cause empty 0.5 space
   context.save()
@@ -265,7 +345,10 @@ const drawRectBorder = (context, imgData) => {
 
 // image, enable border-radius: 50%, border, bgColor
 const drawImage = (context, imgData) => {
-  const { border, 'border-radius': borderRadius } = imgData
+  const {
+    border,
+    'border-radius': borderRadius
+  } = imgData
   let drawImagePromise
   if (hasBorderRadius(borderRadius)) {
     drawImagePromise = drawArcImage(context, imgData)
@@ -287,9 +370,19 @@ const drawImage = (context, imgData) => {
 
 // e.g. 10%, 4px
 const getBorderRadius = imgData => {
-  const { width, height, 'border-radius': borderRadiusAttr } = imgData
+  const {
+    width,
+    height,
+    'border-radius': borderRadiusAttr
+  } = imgData
   const borderRadius = parseInt(borderRadiusAttr, 10)
-  if (borderRadiusAttr.indexOf('%') !== -1) {
+  console.log('borderRadius', borderRadius)
+  if (borderRadius == 0) {
+    return {
+      isCircle: false,
+      borderRadius,
+    }
+  } else if (borderRadiusAttr.indexOf('%') !== -1) {
     const borderRadiusX = parseInt(borderRadius / 100 * width, 10)
     const borderRadiusY = parseInt(borderRadius / 100 * height, 10)
     return {
@@ -307,10 +400,22 @@ const getBorderRadius = imgData => {
 }
 
 const drawViewArcBorder = (context, imgData) => {
-  const { width, height, left, top, backgroundColor, border } = imgData
-  const { borderRadius } = getBorderRadius(imgData)
-  const { borderWidth, borderColor } = getBorderAttributes(border)
   // console.log('🐞-imgData', imgData)
+  const {
+    width,
+    height,
+    left,
+    top,
+    backgroundColor,
+    border
+  } = imgData
+  const {
+    borderRadius
+  } = getBorderRadius(imgData)
+  const {
+    borderWidth,
+    borderColor
+  } = getBorderAttributes(border)
   context.beginPath()
   context.moveTo(left + borderRadius, top)
   context.lineTo(left + width - borderRadius, top)
@@ -351,10 +456,142 @@ const drawViewArcBorder = (context, imgData) => {
   }
 }
 
+const drawViewLineBorder = (context, imgData) => {
+  console.log('🐞-imgData', imgData)
+  const {
+    width,
+    height,
+    left,
+    top,
+    backgroundColor,
+    border,
+    'border-top': borderTop,
+    'border-bottom': borderBottom,
+    'border-left': borderLeft,
+    'border-right': borderRight,
+  } = imgData
+
+  if (hasBorder(border)) {
+    // 使用了border
+    const {
+      borderWidth,
+      borderColor
+    } = getBorderAttributes(border)
+    context.beginPath()
+    context.moveTo(left, top)
+    context.lineTo(left + width, top)
+    context.lineTo(left + width, top + height)
+    context.lineTo(left, top + height)
+    context.closePath()
+    if (backgroundColor) {
+      context.setFillStyle(backgroundColor)
+      context.fill()
+    }
+    if (borderColor && borderWidth) {
+      context.setLineWidth(borderWidth)
+      context.setStrokeStyle(borderColor)
+      context.stroke()
+    }
+
+  } else {
+    // 使用了border-top, border-bottom, border-left, border-right
+    // border-top
+    if (hasBorder(borderTop)) {
+      console.log("top", borderTop)
+      context.beginPath()
+      context.moveTo(left, top)
+      context.lineTo(left + width, top)
+      context.closePath()
+      const {
+        borderWidth,
+        borderColor
+      } = getBorderAttributes(borderTop)
+      console.log(borderWidth, borderColor)
+      if (borderColor && borderWidth) {
+        context.setLineWidth(borderWidth)
+        context.setStrokeStyle(borderColor)
+        context.stroke()
+      }
+    }
+    // border-right
+    if (hasBorder(borderRight)) {
+      context.beginPath()
+      context.moveTo(left + width, top)
+      context.lineTo(left + width, top + height)
+      context.closePath()
+      const {
+        borderWidth,
+        borderColor
+      } = getBorderAttributes(borderRight)
+      console.log(borderWidth, borderColor)
+      if (borderColor && borderWidth) {
+        context.setLineWidth(borderWidth)
+        context.setStrokeStyle(borderColor)
+        context.stroke()
+      }
+    }
+
+    // border-bottom
+    if (hasBorder(borderBottom)) {
+      context.beginPath()
+      context.moveTo(left + width, top + height)
+      context.lineTo(left, top + height)
+      context.closePath()
+      const {
+        borderWidth,
+        borderColor
+      } = getBorderAttributes(borderBottom)
+      console.log(borderWidth, borderColor)
+      if (borderColor && borderWidth) {
+        context.setLineWidth(borderWidth)
+        context.setStrokeStyle(borderColor)
+        context.stroke()
+      }
+    }
+
+    // border-left
+    if (hasBorder(borderLeft)) {
+      {
+        context.beginPath()
+        context.moveTo(left, top + height)
+        context.lineTo(left, top)
+        context.closePath()
+        const {
+          borderWidth,
+          borderColor
+        } = getBorderAttributes(borderLeft)
+        console.log(borderWidth, borderColor)
+        if (borderColor && borderWidth) {
+          context.setLineWidth(borderWidth)
+          context.setStrokeStyle(borderColor)
+          context.stroke()
+        }
+      }
+    }
+    // background-color
+    if (backgroundColor) {
+      context.setFillStyle(backgroundColor)
+      context.fillRect(left, top, width, height)
+    }
+  }
+}
 const drawViewBezierBorder = (context, imgData) => {
-  const { width, height, left, top, backgroundColor, border } = imgData
-  const { borderWidth, borderColor } = getBorderAttributes(border)
-  const { borderRadiusX, borderRadiusY } = getBorderRadius(imgData)
+  const {
+    width,
+    height,
+    left,
+    top,
+    backgroundColor,
+    border
+  } = imgData
+  const {
+    borderWidth,
+    borderColor
+  } = getBorderAttributes(border)
+  const {
+    borderRadiusX,
+    borderRadiusY
+  } = getBorderRadius(imgData)
   context.beginPath()
   context.moveTo(left + borderRadiusX, top)
   context.lineTo(left + width - borderRadiusX, top)
@@ -389,26 +626,45 @@ const drawViewBezierBorder = (context, imgData) => {
 
 // enable border, border-radius, bgColor, position
 const drawView = (context, imgData) => {
-  const { isCircle } = getBorderRadius(imgData)
+  const {
+    isCircle,
+    borderRadius
+  } = getBorderRadius(imgData)
+  console.log("isCircle", isCircle, 'borderRadius', borderRadius)
   if (isCircle) {
+    // 圆角半径一致
     drawViewArcBorder(context, imgData)
+  } else if (borderRadius == 0) {
+    // 圆角半径为0
+    drawViewLineBorder(context, imgData)
   } else {
+    // 圆角半径不一致
     drawViewBezierBorder(context, imgData)
   }
 }
 
 const isTextElement = item => {
-  const { dataset: { text }, type } = item
+  const {
+    dataset: {
+      text
+    },
+    type
+  } = item
   return Boolean(text) || type === 'text'
 }
 
 const isImageElement = item => {
-  const { src, type } = item
+  const {
+    src,
+    type
+  } = item
   return Boolean(src) || type === 'image'
 }
 
 const isViewElement = item => {
-  const { type } = item
+  const {
+    type
+  } = item
   return type === 'view'
 }
 
@@ -438,6 +694,22 @@ const getSortedElementsData = elements =>
     return 0
   })
 
+const drawElement = (context, storeItem) => {
+  const itemPromise = []
+  var item = storeItem
+  if (isTextElement(item)) {
+    const text = drawText(context, item)
+    itemPromise.push(text)
+  } else if (isImageElement(item)) {
+    const image = drawImage(context, item)
+    itemPromise.push(image)
+  } else {
+    const view = drawView(context, item)
+    itemPromise.push(view)
+  }
+  return itemPromise
+}
+
 const drawElements = (context, storeItems) => {
   const itemPromise = []
   storeItems.forEach(item => {
@@ -455,6 +727,27 @@ const drawElements = (context, storeItems) => {
   return itemPromise
 }
 
+/**
+ * 按照默认的顺序画元素
+ */
+const drawElementBaseOnDefault = (context, storeObject, index = 0, drawPromise) => {
+  if (typeof drawPromise === 'undefined') {
+    drawPromise = Promise.resolve()
+  }
+  const objectKey = index
+  const chainPromise = drawPromise.then(() => {
+    const nextPromise = storeObject[objectKey] ?
+      Promise.all(drawElement(context, storeObject[objectKey])) :
+      Promise.resolve()
+    return nextPromise
+  })
+  if (index >= storeObject.length) {
+    return chainPromise
+  } else {
+    return drawElementBaseOnDefault(context, storeObject, index + 1, chainPromise)
+  }
+}
+
 // storeObject: { 0: [...], 1: [...] }
 // chain call promise based on Object key
 const drawElementBaseOnIndex = (context, storeObject, key = 0, drawPromise) => {
@@ -463,9 +756,9 @@ const drawElementBaseOnIndex = (context, storeObject, key = 0, drawPromise) => {
   }
   const objectKey = key // note: key is changing when execute promise then
   const chainPromise = drawPromise.then(() => {
-    const nextPromise = storeObject[objectKey]
-      ? Promise.all(drawElements(context, storeObject[objectKey]))
-      : Promise.resolve()
+    const nextPromise = storeObject[objectKey] ?
+      Promise.all(drawElements(context, storeObject[objectKey])) :
+      Promise.resolve()
     return nextPromise
   })
 
@@ -476,7 +769,7 @@ const drawElementBaseOnIndex = (context, storeObject, key = 0, drawPromise) => {
   }
 }
 
-const drawCanvas = (canvasId, wrapperData, innerData) => {
+const drawCanvas = (canvasId, wrapperData, innerData, callSync = false) => {
   const context = wx.createCanvasContext(canvasId)
   context.setTextBaseline('top')
 
@@ -484,28 +777,39 @@ const drawCanvas = (canvasId, wrapperData, innerData) => {
   // for now, just set canvas background as a compromise
   drawWrapper(context, wrapperData[0])
 
-  const storeObject = {}
-
   const sortedElementData = getSortedElementsData(formatElementData(innerData)) // fake z-index
-
-  sortedElementData.forEach(item => {
-    if (!storeObject[item.rank]) {
-      // initialize
-      storeObject[item.rank] = []
-    }
-    if (isTextElement(item) || isImageElement(item) || isViewElement(item)) {
-      storeObject[item.rank].push(item)
-    }
-  })
-  // note: draw is async
-  return drawElementBaseOnIndex(context, storeObject).then(
-    () =>
+  console.log('sortedElementData', sortedElementData)
+  // console.log('callSync', callSync)
+  if (callSync) {
+    return drawElementBaseOnDefault(context, sortedElementData).then(
+      () =>
       new Promise((resolve, reject) => {
         context.draw(true, () => {
           resolve()
         })
       }),
-  )
+    )
+  } else {
+    const storeObject = {}
+    sortedElementData.forEach(item => {
+      if (!storeObject[item.rank]) {
+        // initialize
+        storeObject[item.rank] = []
+      }
+      if (isTextElement(item) || isImageElement(item) || isViewElement(item)) {
+        storeObject[item.rank].push(item)
+      }
+    })
+    // note: draw is async
+    return drawElementBaseOnIndex(context, storeObject).then(
+      () =>
+      new Promise((resolve, reject) => {
+        context.draw(true, () => {
+          resolve()
+        })
+      }),
+    )
+  }
 }
 
 const wxSelectorQuery = element =>
@@ -514,8 +818,7 @@ const wxSelectorQuery = element =>
       wx
         .createSelectorQuery()
         .selectAll(element)
-        .fields(
-          {
+        .fields({
             dataset: true,
             size: true,
             rect: true,
@@ -532,12 +835,12 @@ const wxSelectorQuery = element =>
     }
   })
 
-const wxml2canvas = (wrapperId, elementsClass, canvasId) => {
+const wxml2canvas = (wrapperId, elementsClass, canvasId, callSync = false) => {
   const getWrapperElement = wxSelectorQuery(wrapperId)
   const getInnerElements = wxSelectorQuery(elementsClass)
 
   return Promise.all([getWrapperElement, getInnerElements]).then(data => {
-    return drawCanvas(canvasId, data[0], data[1])
+    return drawCanvas(canvasId, data[0], data[1], callSync)
   })
 }
 
